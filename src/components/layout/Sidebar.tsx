@@ -2,8 +2,6 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Shield,
-  Lightbulb,
-  Coins,
   Clock,
   Landmark,
   PieChart,
@@ -16,28 +14,39 @@ import {
   Settings,
   HelpCircle,
   ChevronLeft,
+  ChevronDown,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { useState } from "react";
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
 }
 
-const navItems = [
+const mainNavItems = [
   { label: "Overview", icon: LayoutDashboard, path: "/" },
-  { label: "Protocol", icon: Shield, path: "/protocol" },
-  { label: "Use cases", icon: Lightbulb, path: "/use-cases" },
-  { label: "Mint", icon: Coins, path: "/mint" },
   { label: "Vesting", icon: Clock, path: "/vesting" },
   { label: "Treasury", icon: Landmark, path: "/treasury" },
   { label: "Portfolio", icon: PieChart, path: "/portfolio" },
-  { label: "Analytics", icon: BarChart3, path: "/analytics" },
   { label: "Stake", icon: Layers, path: "/stake" },
-  { label: "Rewards", icon: Gift, path: "/rewards" },
-  { label: "Transactions", icon: ArrowLeftRight, path: "/transactions" },
+];
+
+const activityItems = [
+  { label: "Rewards", icon: Gift, path: "/activity/rewards" },
+  { label: "Transactions", icon: ArrowLeftRight, path: "/activity/transactions" },
+  { label: "Analytics", icon: BarChart3, path: "/activity/analytics" },
+];
+
+const bottomNavItems = [
   { label: "Governance", icon: Vote, path: "/governance" },
   { label: "Documents", icon: FileText, path: "/documents" },
   { label: "Settings", icon: Settings, path: "/settings" },
@@ -46,6 +55,28 @@ const navItems = [
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
+  const isActivityActive = activityItems.some((item) => location.pathname.startsWith(item.path));
+  const [activityOpen, setActivityOpen] = useState(isActivityActive);
+
+  const renderNavItem = (item: { label: string; icon: React.ComponentType<{ className?: string }>; path: string }) => {
+    const isActive = location.pathname === item.path;
+    return (
+      <NavLink
+        key={item.path}
+        to={item.path}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+          isActive
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          collapsed && "justify-center px-2"
+        )}
+      >
+        <item.icon className="w-5 h-5 flex-shrink-0" />
+        {!collapsed && <span>{item.label}</span>}
+      </NavLink>
+    );
+  };
 
   return (
     <aside
@@ -87,25 +118,47 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Navigation */}
       <ScrollArea className="flex-1 py-4">
         <nav className="space-y-1 px-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  collapsed && "justify-center px-2"
-                )}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </NavLink>
-            );
-          })}
+          {/* Main Navigation */}
+          {mainNavItems.map(renderNavItem)}
+
+          {/* Activity Section with Collapsible */}
+          {!collapsed ? (
+            <Collapsible open={activityOpen} onOpenChange={setActivityOpen}>
+              <CollapsibleTrigger asChild>
+                <button
+                  className={cn(
+                    "flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    isActivityActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-5 h-5 flex-shrink-0" />
+                    <span>Activity</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 transition-transform",
+                      activityOpen && "rotate-180"
+                    )}
+                  />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pl-4 space-y-1 mt-1">
+                {activityItems.map(renderNavItem)}
+              </CollapsibleContent>
+            </Collapsible>
+          ) : (
+            // When collapsed, show activity items directly
+            activityItems.map(renderNavItem)
+          )}
+
+          {/* Divider */}
+          <div className="my-4 border-t border-border" />
+
+          {/* Bottom Navigation */}
+          {bottomNavItems.map(renderNavItem)}
         </nav>
       </ScrollArea>
 

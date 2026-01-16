@@ -1,9 +1,9 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { bsc } from 'wagmi/chains';
+import { sepolia } from 'wagmi/chains';
 
 export const config = getDefaultConfig({
   appName: 'CAPShield',
   projectId: 'capshield-dashboard', // WalletConnect project ID - users can replace with their own
-  chains: [bsc],
+  chains: [sepolia],
   ssr: false,
 });

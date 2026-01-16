@@ -13,8 +13,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index";
 import Stake from "./pages/Stake";
 import Vesting from "./pages/Vesting";
-import Rewards from "./pages/Rewards";
-import Transactions from "./pages/Transactions";
+import Treasury from "./pages/Treasury";
+import ActivityRewards from "./pages/activity/Rewards";
+import ActivityTransactions from "./pages/activity/Transactions";
+import ActivityAnalytics from "./pages/activity/Analytics";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -33,15 +35,13 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/stake" element={<Stake />} />
                 <Route path="/vesting" element={<Vesting />} />
-                <Route path="/rewards" element={<Rewards />} />
-                <Route path="/transactions" element={<Transactions />} />
-                {/* Placeholder routes for other sections */}
-                <Route path="/protocol" element={<PlaceholderPage />} />
-                <Route path="/use-cases" element={<PlaceholderPage />} />
-                <Route path="/mint" element={<PlaceholderPage />} />
-                <Route path="/treasury" element={<PlaceholderPage />} />
+                <Route path="/treasury" element={<Treasury />} />
                 <Route path="/portfolio" element={<PlaceholderPage />} />
-                <Route path="/analytics" element={<PlaceholderPage />} />
+                {/* Activity section */}
+                <Route path="/activity/rewards" element={<ActivityRewards />} />
+                <Route path="/activity/transactions" element={<ActivityTransactions />} />
+                <Route path="/activity/analytics" element={<ActivityAnalytics />} />
+                {/* Other sections */}
                 <Route path="/governance" element={<PlaceholderPage />} />
                 <Route path="/documents" element={<PlaceholderPage />} />
                 <Route path="/settings" element={<PlaceholderPage />} />
