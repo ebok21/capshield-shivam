@@ -8,24 +8,61 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SkeletonChart } from "@/components/ui/skeleton-card";
+import { ConnectWalletPrompt } from "@/components/ui/connect-wallet-prompt";
 
 const mockData = [
-  { month: "Jan", participation: 5000, rewards: 200 },
-  { month: "Feb", participation: 8000, rewards: 450 },
-  { month: "Mar", participation: 12000, rewards: 800 },
-  { month: "Apr", participation: 15000, rewards: 1100 },
-  { month: "May", participation: 18000, rewards: 1500 },
-  { month: "Jun", participation: 22000, rewards: 1950 },
+  { month: "Jan", staked: 5000, rewards: 200 },
+  { month: "Feb", staked: 8000, rewards: 450 },
+  { month: "Mar", staked: 12000, rewards: 800 },
+  { month: "Apr", staked: 15000, rewards: 1100 },
+  { month: "May", staked: 18000, rewards: 1500 },
+  { month: "Jun", staked: 22000, rewards: 1950 },
 ];
 
-const summaryStats = {
-  totalContributed: "22,000 CAPX",
-  totalRewards: "1,950 CAPX",
-  rewardRate: "8.86%",
-  claimableNow: "450 CAPX",
-};
+interface ParticipationChartProps {
+  isLoading?: boolean;
+  isWalletConnected?: boolean;
+  summaryStats?: {
+    totalStaked: string;
+    totalRewards: string;
+    rewardRate: string;
+    claimableNow: string;
+  };
+}
 
-export function ParticipationChart() {
+export function ParticipationChart({
+  isLoading = false,
+  isWalletConnected = true,
+  summaryStats = {
+    totalStaked: "22,000 CAPX",
+    totalRewards: "1,950 CAPX",
+    rewardRate: "8.86%",
+    claimableNow: "450 CAPX",
+  },
+}: ParticipationChartProps) {
+  if (isLoading) {
+    return <SkeletonChart />;
+  }
+
+  if (!isWalletConnected) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">My Participation vs Rewards</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[250px]">
+            <ConnectWalletPrompt 
+              title="Connect wallet to view"
+              description="Connect your wallet to see your staking participation and rewards"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -36,13 +73,13 @@ export function ParticipationChart() {
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={mockData}>
               <defs>
-                <linearGradient id="participationGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(271, 91%, 65%)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="hsl(271, 91%, 65%)" stopOpacity={0.05} />
+                <linearGradient id="stakedGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                 </linearGradient>
                 <linearGradient id="rewardsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(330, 81%, 60%)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="hsl(330, 81%, 60%)" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="hsl(271, 91%, 65%)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="hsl(271, 91%, 65%)" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -61,7 +98,7 @@ export function ParticipationChart() {
               <Tooltip
                 formatter={(value: number, name: string) => [
                   `${value.toLocaleString()} CAPX`,
-                  name === "participation" ? "Participation" : "Rewards",
+                  name === "staked" ? "Staked" : "Rewards",
                 ]}
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
@@ -71,15 +108,15 @@ export function ParticipationChart() {
               />
               <Area
                 type="monotone"
-                dataKey="participation"
-                stroke="hsl(271, 91%, 65%)"
+                dataKey="staked"
+                stroke="hsl(var(--primary))"
                 strokeWidth={2}
-                fill="url(#participationGradient)"
+                fill="url(#stakedGradient)"
               />
               <Area
                 type="monotone"
                 dataKey="rewards"
-                stroke="hsl(330, 81%, 60%)"
+                stroke="hsl(271, 91%, 65%)"
                 strokeWidth={2}
                 fill="url(#rewardsGradient)"
               />
@@ -90,11 +127,11 @@ export function ParticipationChart() {
         {/* Legend */}
         <div className="flex items-center gap-6 mt-4">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-gradient-purple" />
-            <span className="text-sm text-muted-foreground">My Participation</span>
+            <div className="w-3 h-3 rounded-full bg-primary" />
+            <span className="text-sm text-muted-foreground">My Staked</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-gradient-pink" />
+            <div className="w-3 h-3 rounded-full" style={{ background: "hsl(271, 91%, 65%)" }} />
             <span className="text-sm text-muted-foreground">My Rewards</span>
           </div>
         </div>
@@ -102,8 +139,8 @@ export function ParticipationChart() {
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-border">
           <div>
-            <p className="text-xs text-muted-foreground">Total Contributed</p>
-            <p className="text-sm font-semibold">{summaryStats.totalContributed}</p>
+            <p className="text-xs text-muted-foreground">Total Staked</p>
+            <p className="text-sm font-semibold">{summaryStats.totalStaked}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total Rewards</p>
@@ -111,7 +148,7 @@ export function ParticipationChart() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Reward Rate</p>
-            <p className="text-sm font-semibold text-capx-success">
+            <p className="text-sm font-semibold text-primary">
               {summaryStats.rewardRate}
             </p>
           </div>

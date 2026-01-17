@@ -1,12 +1,12 @@
-import { Wallet, TrendingUp, Gift, Landmark } from "lucide-react";
+import { Wallet, Layers, Gift, Building2 } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TreasuryChart } from "@/components/dashboard/TreasuryChart";
 import { ParticipationChart } from "@/components/dashboard/ParticipationChart";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { StakingOverview } from "@/components/dashboard/StakingOverview";
-import { VestingOverview } from "@/components/dashboard/VestingOverview";
+import { useWalletState } from "@/hooks/useWalletState";
 
 export default function Index() {
+  const { isConnected } = useWalletState();
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -23,45 +23,42 @@ export default function Index() {
           title="My CAPX Balance"
           value="12,450 CAPX"
           subValue="≈ $4,980"
-          change={{ value: 5.2, period: "this week" }}
           icon={<Wallet className="w-5 h-5" />}
+          requiresWallet
+          isWalletConnected={isConnected}
+          tooltip="Your current CAPX token balance"
         />
         <MetricCard
-          title="My Contribution"
+          title="Currently Staked"
           value="22,000 CAPX"
-          change={{ value: 12.3, period: "this month" }}
-          icon={<TrendingUp className="w-5 h-5" />}
+          icon={<Layers className="w-5 h-5" />}
+          requiresWallet
+          isWalletConnected={isConnected}
+          tooltip="Total CAPX tokens you have staked across all pools"
         />
         <MetricCard
           title="Rewards Earned"
           value="1,950 CAPX"
-          subValue="450 claimable"
-          change={{ value: 8.7, period: "this week" }}
+          subValue="Claimable: 450 CAPX"
           icon={<Gift className="w-5 h-5" />}
+          requiresWallet
+          isWalletConnected={isConnected}
+          tooltip="Total rewards earned from staking"
         />
         <MetricCard
           title="Treasury Size"
           value="$2.34M"
-          subValue="On-chain transparent"
-          change={{ value: 3.1, period: "this week" }}
-          icon={<Landmark className="w-5 h-5" />}
+          subValue="Protocol-wide"
+          icon={<Building2 className="w-5 h-5" />}
+          tooltip="Total value locked in the protocol treasury"
         />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TreasuryChart />
-        <ParticipationChart />
+        <ParticipationChart isWalletConnected={isConnected} />
       </div>
-
-      {/* Recent Activity */}
-      <RecentActivity />
-
-      {/* Staking Overview */}
-      <StakingOverview />
-
-      {/* Vesting Overview */}
-      <VestingOverview />
     </div>
   );
 }

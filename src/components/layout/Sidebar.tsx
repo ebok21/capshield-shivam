@@ -3,8 +3,7 @@ import {
   LayoutDashboard,
   Shield,
   Clock,
-  Landmark,
-  PieChart,
+  Building2,
   BarChart3,
   Layers,
   Gift,
@@ -35,8 +34,7 @@ interface SidebarProps {
 const mainNavItems = [
   { label: "Overview", icon: LayoutDashboard, path: "/" },
   { label: "Vesting", icon: Clock, path: "/vesting" },
-  { label: "Treasury", icon: Landmark, path: "/treasury" },
-  { label: "Portfolio", icon: PieChart, path: "/portfolio" },
+  { label: "Treasury", icon: Building2, path: "/treasury" },
   { label: "Stake", icon: Layers, path: "/stake" },
 ];
 
@@ -150,7 +148,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </CollapsibleContent>
             </Collapsible>
           ) : (
-            // When collapsed, show activity items directly
             activityItems.map(renderNavItem)
           )}
 
