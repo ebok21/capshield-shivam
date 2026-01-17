@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SkeletonChart } from "@/components/ui/skeleton-card";
 
 const mockData = {
   "7D": [
@@ -45,15 +46,28 @@ const mockData = {
 const timeFilters = ["7D", "30D", "90D", "All"] as const;
 type TimeFilter = (typeof timeFilters)[number];
 
-const summaryStats = {
-  startingValue: "$1,500,000",
-  currentValue: "$2,340,560",
-  netGrowth: "+$840,560 (+56.04%)",
-  onChain: "100%",
-};
+interface TreasuryChartProps {
+  isLoading?: boolean;
+  summaryStats?: {
+    startingValue: string;
+    currentValue: string;
+    netGrowth: string;
+  };
+}
 
-export function TreasuryChart() {
+export function TreasuryChart({ 
+  isLoading = false,
+  summaryStats = {
+    startingValue: "$1,500,000",
+    currentValue: "$2,340,560",
+    netGrowth: "+$840,560 (+56.04%)",
+  }
+}: TreasuryChartProps) {
   const [activeFilter, setActiveFilter] = useState<TimeFilter>("30D");
+
+  if (isLoading) {
+    return <SkeletonChart />;
+  }
 
   const data = mockData[activeFilter];
 
@@ -86,8 +100,8 @@ export function TreasuryChart() {
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="treasuryGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(271, 91%, 65%)" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="hsl(187, 92%, 69%)" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -117,7 +131,7 @@ export function TreasuryChart() {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="hsl(271, 91%, 65%)"
+                stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 fill="url(#treasuryGradient)"
               />
@@ -126,7 +140,7 @@ export function TreasuryChart() {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-border">
+        <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-border">
           <div>
             <p className="text-xs text-muted-foreground">Starting Value</p>
             <p className="text-sm font-semibold">{summaryStats.startingValue}</p>
@@ -137,13 +151,9 @@ export function TreasuryChart() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Net Growth</p>
-            <p className="text-sm font-semibold text-capx-success">
+            <p className="text-sm font-semibold text-primary">
               {summaryStats.netGrowth}
             </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">On-Chain</p>
-            <p className="text-sm font-semibold">{summaryStats.onChain}</p>
           </div>
         </div>
       </CardContent>

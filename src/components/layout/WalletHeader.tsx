@@ -4,22 +4,22 @@ import { Button } from "@/components/ui/button";
 
 export function WalletHeader() {
   return (
-    <header className="h-14 bg-primary flex items-center justify-between px-4 md:px-6">
-      <div className="flex items-center gap-2">
-        <span className="text-primary-foreground text-sm font-medium">
-          CAPShield Dashboard
+    <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6">
+      {/* Left side - Info text */}
+      <div className="hidden lg:block">
+        <span className="text-sm text-muted-foreground">
+          Balances on-chain • Pricing via oracle
         </span>
       </div>
+      <div className="lg:hidden" />
 
+      {/* Right side - Notifications & Wallet */}
       <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-primary-foreground hover:bg-primary-foreground/10"
-        >
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
         </Button>
-        
+
         <ConnectButton.Custom>
           {({
             account,
@@ -53,9 +53,7 @@ export function WalletHeader() {
                     return (
                       <Button
                         onClick={openConnectModal}
-                        variant="secondary"
-                        size="sm"
-                        className="font-medium"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         Connect Wallet
                       </Button>
@@ -67,7 +65,6 @@ export function WalletHeader() {
                       <Button
                         onClick={openChainModal}
                         variant="destructive"
-                        size="sm"
                       >
                         Wrong network
                       </Button>
@@ -78,7 +75,7 @@ export function WalletHeader() {
                     <div className="flex items-center gap-2">
                       <Button
                         onClick={openChainModal}
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         className="hidden sm:flex items-center gap-2"
                       >
@@ -96,19 +93,19 @@ export function WalletHeader() {
                             )}
                           </div>
                         )}
-                        {chain.name}
+                        <span className="hidden md:inline">{chain.name}</span>
                       </Button>
 
                       <Button
                         onClick={openAccountModal}
-                        variant="secondary"
-                        size="sm"
-                        className="font-medium"
+                        className="bg-primary hover:bg-primary/90"
                       >
-                        {account.displayName}
-                        {account.displayBalance
-                          ? ` (${account.displayBalance})`
-                          : ""}
+                        <span className="hidden sm:inline mr-2">
+                          {account.displayBalance ?? ""}
+                        </span>
+                        <span className="font-mono">
+                          {account.displayName}
+                        </span>
                       </Button>
                     </div>
                   );
