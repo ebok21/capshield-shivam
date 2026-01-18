@@ -1,8 +1,12 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ParticipationChart } from "@/components/dashboard/ParticipationChart";
-import { Gift, TrendingUp, Clock, Coins, ExternalLink } from "lucide-react";
+import { Gift, TrendingUp, Clock, Coins, ExternalLink, Loader2, CheckCircle2 } from "lucide-react";
+import { useWalletState } from "@/hooks/useWalletState";
+import { SkeletonCard, SkeletonChart, SkeletonList } from "@/components/ui/skeleton-card";
+import { ConnectWalletPrompt } from "@/components/ui/connect-wallet-prompt";
 
 interface Reward {
   id: string;
@@ -71,8 +75,8 @@ const rewards: Reward[] = [
 
 const rewardsSummary = {
   totalEarned: "1,950 CAPX",
+  totalEarnedUsd: "$780",
   claimable: "450 CAPX",
-  pending: "500 CAPX",
   thisMonth: "875 CAPX",
 };
 
@@ -87,7 +91,45 @@ const getStatusBadge = (status: Reward["status"]) => {
   }
 };
 
+type ClaimStatus = "idle" | "pending" | "success";
+
 export default function Rewards() {
+  const { isConnected } = useWalletState();
+  const [isLoading, setIsLoading] = useState(true);
+  const [claimStatus, setClaimStatus] = useState<ClaimStatus>("idle");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleClaimAll = async () => {
+    setClaimStatus("pending");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setClaimStatus("success");
+    setTimeout(() => setClaimStatus("idle"), 2000);
+  };
+
+  const hasClaimable = parseInt(rewardsSummary.claimable.replace(/,/g, "")) > 0;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Rewards</h1>
+            <p className="text-muted-foreground">Track and claim your earned rewards</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        <SkeletonChart />
+        <SkeletonList rows={6} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -98,117 +140,128 @@ export default function Rewards() {
             Track and claim your earned rewards
           </p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90">
-          <Gift className="w-4 h-4 mr-2" />
-          Claim All ({rewardsSummary.claimable})
-        </Button>
+        {isConnected && hasClaimable && (
+          <Button 
+            className="bg-primary hover:bg-primary/90"
+            onClick={handleClaimAll}
+            disabled={claimStatus === "pending"}
+          >
+            {claimStatus === "pending" ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : claimStatus === "success" ? (
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+            ) : (
+              <Gift className="w-4 h-4 mr-2" />
+            )}
+            {claimStatus === "success" ? "Claimed!" : `Claim All (${rewardsSummary.claimable})`}
+          </Button>
+        )}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Coins className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Earned</p>
-                <p className="text-xl font-bold">{rewardsSummary.totalEarned}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-capx-success/10">
-                <Gift className="w-5 h-5 text-capx-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Claimable</p>
-                <p className="text-xl font-bold">{rewardsSummary.claimable}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-capx-warning/10">
-                <Clock className="w-5 h-5 text-capx-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-xl font-bold">{rewardsSummary.pending}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-capx-purple/10">
-                <TrendingUp className="w-5 h-5 text-capx-purple" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-xl font-bold">{rewardsSummary.thisMonth}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Participation Chart */}
-      <ParticipationChart />
-
-      {/* Rewards History */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Rewards History</CardTitle>
-            <Button variant="outline" size="sm">
-              Export
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {rewards.map((reward) => (
-              <div
-                key={reward.id}
-                className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-capx-success/10 flex items-center justify-center">
+      {!isConnected ? (
+        <ConnectWalletPrompt 
+          title="Connect wallet to view rewards"
+          description="Connect your wallet to see your earned rewards and claim available tokens"
+        />
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Coins className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Earned</p>
+                    <p className="text-xl font-bold">{rewardsSummary.totalEarned}</p>
+                    <p className="text-xs text-muted-foreground">{rewardsSummary.totalEarnedUsd}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-capx-success/10">
                     <Gift className="w-5 h-5 text-capx-success" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{reward.type}</p>
-                      {getStatusBadge(reward.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{reward.source}</p>
+                    <p className="text-sm text-muted-foreground">Claimable</p>
+                    <p className="text-xl font-bold text-capx-success">{rewardsSummary.claimable}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-capx-success">{reward.amount}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{reward.date}</span>
-                    {reward.txHash && (
-                      <Button variant="link" size="sm" className="h-auto p-0 text-xs">
-                        {reward.txHash}
-                        <ExternalLink className="w-3 h-3 ml-1" />
-                      </Button>
-                    )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-capx-purple/10">
+                    <TrendingUp className="w-5 h-5 text-capx-purple" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">This Month</p>
+                    <p className="text-xl font-bold">{rewardsSummary.thisMonth}</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Participation Chart */}
+          <ParticipationChart />
+
+          {/* Rewards History */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Rewards History</CardTitle>
+                <Button variant="outline" size="sm">
+                  Export
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {rewards.map((reward) => (
+                  <div
+                    key={reward.id}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-capx-success/10 flex items-center justify-center">
+                        <Gift className="w-5 h-5 text-capx-success" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{reward.type}</p>
+                          {getStatusBadge(reward.status)}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{reward.source}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-capx-success">{reward.amount}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{reward.date}</span>
+                        {reward.txHash && (
+                          <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
+                            <a href={`https://etherscan.io/tx/${reward.txHash}`} target="_blank" rel="noopener noreferrer">
+                              {reward.txHash}
+                              <ExternalLink className="w-3 h-3 ml-1" />
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
