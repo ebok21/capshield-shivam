@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -11,140 +12,92 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Layers, TrendingUp, Clock, AlertCircle, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Layers,
+  TrendingUp,
+  Clock,
+  AlertCircle,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Shield,
+  Lock,
+  Unlock,
+} from "lucide-react";
 import { useWalletState } from "@/hooks/useWalletState";
-import { SkeletonCard, SkeletonList } from "@/components/ui/skeleton-card";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
 import { ConnectWalletPrompt } from "@/components/ui/connect-wallet-prompt";
 
-interface Pool {
-  id: string;
-  name: string;
-  description: string;
-  totalStaked: string;
-  myStake: string;
-  apy: string;
-  lockPeriod: string;
-  minStake: string;
-  status: "active" | "full" | "coming-soon";
-}
-
-const pools: Pool[] = [
-  {
-    id: "1",
-    name: "Crypto Pool",
-    description: "Stake to back crypto-focused deals",
-    totalStaked: "1,250,000 CAPX",
-    myStake: "5,000 CAPX",
-    apy: "12.5%",
-    lockPeriod: "30 days",
-    minStake: "100 CAPX",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Markets Pool",
-    description: "Participate in traditional market opportunities",
-    totalStaked: "890,000 CAPX",
-    myStake: "3,200 CAPX",
-    apy: "10.2%",
-    lockPeriod: "60 days",
-    minStake: "250 CAPX",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Real Assets Pool",
-    description: "Back real-world asset tokenization",
-    totalStaked: "560,000 CAPX",
-    myStake: "2,800 CAPX",
-    apy: "8.8%",
-    lockPeriod: "90 days",
-    minStake: "500 CAPX",
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Innovation Pool",
-    description: "High-risk, high-reward emerging tech deals",
-    totalStaked: "320,000 CAPX",
-    myStake: "1,500 CAPX",
-    apy: "15.0%",
-    lockPeriod: "14 days",
-    minStake: "100 CAPX",
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Business Pool",
-    description: "Support SME financing initiatives",
-    totalStaked: "445,000 CAPX",
-    myStake: "2,000 CAPX",
-    apy: "9.5%",
-    lockPeriod: "45 days",
-    minStake: "200 CAPX",
-    status: "active",
-  },
-  {
-    id: "6",
-    name: "Lifestyle Pool",
-    description: "Consumer and lifestyle brand partnerships",
-    totalStaked: "180,000 CAPX",
-    myStake: "1,200 CAPX",
-    apy: "7.2%",
-    lockPeriod: "21 days",
-    minStake: "50 CAPX",
-    status: "active",
-  },
-];
-
-const myStakingSummary = {
+const stakingData = {
   totalStaked: "15,700 CAPX",
   totalStakedUsd: "$6,280",
-  totalRewards: "1,245 CAPX",
   claimableRewards: "312 CAPX",
-  averageApy: "10.8%",
+  claimableRewardsUsd: "$125",
+  shieldEarned: "1,245 SHIELD",
+  currentApy: "8.5%",
+  lockedApy: "12.5%",
+  poolTvl: "2,450,000 CAPX",
 };
+
+const lockDurations = [
+  { value: "7", label: "7 days", apyBoost: "1.2x", shieldMultiplier: "0.5x" },
+  { value: "30", label: "30 days", apyBoost: "1.5x", shieldMultiplier: "1x" },
+  { value: "90", label: "90 days", apyBoost: "2x", shieldMultiplier: "2x" },
+  { value: "180", label: "180 days", apyBoost: "3x", shieldMultiplier: "4x" },
+];
 
 type TxStatus = "idle" | "pending" | "success" | "failed";
 
 export default function Stake() {
   const { isConnected } = useWalletState();
   const [isLoading, setIsLoading] = useState(true);
-  const [stakeModalOpen, setStakeModalOpen] = useState(false);
-  const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"stake" | "unstake">("stake");
   const [amount, setAmount] = useState("");
+  const [lockTokens, setLockTokens] = useState(false);
+  const [lockDuration, setLockDuration] = useState("30");
   const [txStatus, setTxStatus] = useState<TxStatus>("idle");
 
   const availableBalance = "12,450 CAPX";
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
+    const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
-  const openStakeModal = (pool: Pool, mode: "stake" | "unstake") => {
-    setSelectedPool(pool);
+  const openModal = (mode: "stake" | "unstake") => {
     setModalMode(mode);
     setAmount("");
     setTxStatus("idle");
-    setStakeModalOpen(true);
+    setLockTokens(false);
+    setModalOpen(true);
   };
 
   const handleTransaction = async () => {
     setTxStatus("pending");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    // Simulate success/failure
     const success = Math.random() > 0.2;
     setTxStatus(success ? "success" : "failed");
   };
 
   const resetModal = () => {
-    setStakeModalOpen(false);
+    setModalOpen(false);
     setAmount("");
     setTxStatus("idle");
-    setSelectedPool(null);
+    setLockTokens(false);
   };
+
+  const selectedLock = lockDurations.find((d) => d.value === lockDuration);
+  const estimatedApy = lockTokens
+    ? `${(8.5 * parseFloat(selectedLock?.apyBoost || "1")).toFixed(1)}%`
+    : stakingData.currentApy;
 
   if (isLoading) {
     return (
@@ -152,13 +105,14 @@ export default function Stake() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Stake</h1>
-            <p className="text-muted-foreground">Stake your CAPX tokens to earn rewards</p>
+            <p className="text-muted-foreground">Stake your CAPX tokens</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+          {[...Array(4)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
-        <SkeletonList rows={6} />
       </div>
     );
   }
@@ -170,17 +124,13 @@ export default function Stake() {
         <div>
           <h1 className="text-2xl font-bold">Stake</h1>
           <p className="text-muted-foreground">
-            Stake your CAPX tokens to earn rewards and back deals
+            Stake your CAPX tokens to earn rewards
           </p>
         </div>
         {isConnected && (
-          <Button 
+          <Button
             className="bg-primary hover:bg-primary/90"
-            onClick={() => {
-              setSelectedPool(pools[0]);
-              setModalMode("stake");
-              setStakeModalOpen(true);
-            }}
+            onClick={() => openModal("stake")}
           >
             <Layers className="w-4 h-4 mr-2" />
             Quick Stake
@@ -189,7 +139,7 @@ export default function Stake() {
       </div>
 
       {!isConnected ? (
-        <ConnectWalletPrompt 
+        <ConnectWalletPrompt
           title="Connect wallet to stake"
           description="Connect your wallet to stake CAPX tokens and earn rewards"
         />
@@ -205,8 +155,8 @@ export default function Stake() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Staked</p>
-                    <p className="text-xl font-bold">{myStakingSummary.totalStaked}</p>
-                    <p className="text-xs text-muted-foreground">{myStakingSummary.totalStakedUsd}</p>
+                    <p className="text-xl font-bold">{stakingData.totalStaked}</p>
+                    <p className="text-xs text-muted-foreground">{stakingData.totalStakedUsd}</p>
                   </div>
                 </div>
               </CardContent>
@@ -214,25 +164,13 @@ export default function Stake() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-capx-success/10">
-                    <TrendingUp className="w-5 h-5 text-capx-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Rewards</p>
-                    <p className="text-xl font-bold">{myStakingSummary.totalRewards}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-capx-warning/10">
-                    <Clock className="w-5 h-5 text-capx-warning" />
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <TrendingUp className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Claimable Rewards</p>
-                    <p className="text-xl font-bold text-capx-success">{myStakingSummary.claimableRewards}</p>
+                    <p className="text-xl font-bold text-primary">{stakingData.claimableRewards}</p>
+                    <p className="text-xs text-muted-foreground">{stakingData.claimableRewardsUsd}</p>
                   </div>
                 </div>
               </CardContent>
@@ -240,90 +178,37 @@ export default function Stake() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-capx-purple/10">
-                    <TrendingUp className="w-5 h-5 text-capx-purple" />
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Shield className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Average APY</p>
-                    <p className="text-xl font-bold">{myStakingSummary.averageApy}</p>
+                    <p className="text-sm text-muted-foreground">SHIELD Earned</p>
+                    <p className="text-xl font-bold">{stakingData.shieldEarned}</p>
+                    <p className="text-xs text-muted-foreground">From locked staking</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pool TVL</p>
+                    <p className="text-xl font-bold">{stakingData.poolTvl}</p>
+                    <p className="text-xs text-muted-foreground">Total value locked</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Staking Pools */}
+          {/* Staking Interface */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Staking Pools</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {pools.map((pool) => (
-                  <Card key={pool.id} className="border border-border">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold">{pool.name}</h4>
-                            <Badge
-                              variant={pool.status === "active" ? "default" : "secondary"}
-                              className="text-xs"
-                            >
-                              {pool.status === "active" ? "Active" : pool.status}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">{pool.description}</p>
-                        </div>
-                        <span className="text-lg font-bold text-capx-success">{pool.apy}</span>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <p className="text-xs text-muted-foreground">My Stake</p>
-                            <p className="font-medium">{pool.myStake}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Lock Period</p>
-                            <p className="font-medium">{pool.lockPeriod}</p>
-                          </div>
-                        </div>
-
-                        <div className="text-sm">
-                          <p className="text-xs text-muted-foreground">Total in Pool</p>
-                          <p className="font-medium">{pool.totalStaked}</p>
-                        </div>
-
-                        <div className="flex gap-2 pt-2">
-                          <Button 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => openStakeModal(pool, "stake")}
-                          >
-                            Stake
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex-1"
-                            onClick={() => openStakeModal(pool, "unstake")}
-                          >
-                            Unstake
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
+              <CardTitle className="text-lg">CAPX Staking Pool</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="stake" className="w-full">
@@ -331,16 +216,25 @@ export default function Stake() {
                   <TabsTrigger value="stake">Stake CAPX</TabsTrigger>
                   <TabsTrigger value="unstake">Unstake CAPX</TabsTrigger>
                 </TabsList>
-                <TabsContent value="stake" className="mt-4">
-                  <div className="max-w-md space-y-4">
+
+                <TabsContent value="stake" className="mt-6">
+                  <div className="max-w-lg space-y-6">
+                    {/* Amount Input */}
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Amount to Stake</label>
+                      <Label className="mb-2 block">Amount to Stake</Label>
                       <div className="relative">
-                        <Input type="number" placeholder="0.00" className="pr-20" />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          className="pr-20"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
                           className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs"
+                          onClick={() => setAmount("12450")}
                         >
                           MAX
                         </Button>
@@ -349,19 +243,95 @@ export default function Stake() {
                         Available: {availableBalance}
                       </p>
                     </div>
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                      <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5" />
-                      <p className="text-xs text-muted-foreground">
-                        Staked tokens will be locked for the pool's duration. Early unstaking may incur penalties.
-                      </p>
+
+                    {/* Lock Toggle */}
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                      <div className="flex items-center gap-3">
+                        {lockTokens ? (
+                          <Lock className="w-5 h-5 text-primary" />
+                        ) : (
+                          <Unlock className="w-5 h-5 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="font-medium">Lock tokens?</p>
+                          <p className="text-xs text-muted-foreground">
+                            {lockTokens
+                              ? "Higher APY + earn SHIELD governance tokens"
+                              : "Lower APY, withdraw anytime"}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch checked={lockTokens} onCheckedChange={setLockTokens} />
                     </div>
-                    <Button className="w-full">Stake CAPX</Button>
+
+                    {/* Lock Duration (only if lock enabled) */}
+                    {lockTokens && (
+                      <div>
+                        <Label className="mb-2 block">Lock Duration</Label>
+                        <Select value={lockDuration} onValueChange={setLockDuration}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {lockDurations.map((duration) => (
+                              <SelectItem key={duration.value} value={duration.value}>
+                                {duration.label} ({duration.apyBoost} APY, {duration.shieldMultiplier} SHIELD)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Summary */}
+                    <div className="p-4 rounded-lg bg-muted/30 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Mode</span>
+                        <span className="flex items-center gap-1">
+                          {lockTokens ? (
+                            <>
+                              <Lock className="w-3 h-3" />
+                              Locked ({selectedLock?.label})
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="w-3 h-3" />
+                              Flexible
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Estimated APY</span>
+                        <span className="text-primary font-medium">{estimatedApy}</span>
+                      </div>
+                      {lockTokens && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">SHIELD Multiplier</span>
+                          <span className="font-medium">{selectedLock?.shieldMultiplier}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {lockTokens && (
+                      <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
+                        <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          Locked tokens cannot be withdrawn until the lock period ends.
+                        </p>
+                      </div>
+                    )}
+
+                    <Button className="w-full" disabled={!amount}>
+                      Stake CAPX
+                    </Button>
                   </div>
                 </TabsContent>
-                <TabsContent value="unstake" className="mt-4">
-                  <div className="max-w-md space-y-4">
+
+                <TabsContent value="unstake" className="mt-6">
+                  <div className="max-w-lg space-y-6">
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Amount to Unstake</label>
+                      <Label className="mb-2 block">Amount to Unstake</Label>
                       <div className="relative">
                         <Input type="number" placeholder="0.00" className="pr-20" />
                         <Button
@@ -373,44 +343,66 @@ export default function Stake() {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Available to unstake: 8,200 CAPX
+                        Available to unstake: 8,200 CAPX (flexible)
                       </p>
                     </div>
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-capx-warning/10">
-                      <AlertCircle className="w-4 h-4 text-capx-warning mt-0.5" />
-                      <p className="text-xs text-capx-warning">
-                        Some tokens are still locked. Check individual pool lock periods.
+
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
+                      <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <p className="text-xs text-muted-foreground">
+                        7,500 CAPX is currently locked and cannot be unstaked until the lock period ends.
                       </p>
                     </div>
-                    <Button variant="outline" className="w-full">Unstake CAPX</Button>
+
+                    <Button variant="outline" className="w-full">
+                      Unstake CAPX
+                    </Button>
                   </div>
                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
+
+          {/* Claim Rewards */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold">Claimable Rewards</p>
+                  <p className="text-2xl font-bold text-primary">{stakingData.claimableRewards}</p>
+                  <p className="text-sm text-muted-foreground">{stakingData.claimableRewardsUsd}</p>
+                </div>
+                <Button className="bg-primary hover:bg-primary/90">
+                  Claim Rewards
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
 
-      {/* Stake/Unstake Modal */}
-      <Dialog open={stakeModalOpen} onOpenChange={resetModal}>
+      {/* Stake Modal */}
+      <Dialog open={modalOpen} onOpenChange={resetModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               {modalMode === "stake" ? "Stake CAPX" : "Unstake CAPX"}
             </DialogTitle>
             <DialogDescription>
-              {selectedPool?.name} • {selectedPool?.apy} APY • {selectedPool?.lockPeriod} lock
+              {modalMode === "stake"
+                ? "Enter the amount to stake"
+                : "Enter the amount to unstake"}
             </DialogDescription>
           </DialogHeader>
 
           {txStatus === "idle" || txStatus === "pending" ? (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Amount</label>
+                <Label className="mb-2 block">Amount</Label>
                 <div className="relative">
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
+                  <Input
+                    type="number"
+                    placeholder="0.00"
                     className="pr-20 text-lg"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
@@ -420,83 +412,72 @@ export default function Stake() {
                     variant="ghost"
                     size="sm"
                     className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs"
-                    onClick={() => setAmount(modalMode === "stake" ? "12450" : "5000")}
+                    onClick={() => setAmount("12450")}
                     disabled={txStatus === "pending"}
                   >
                     MAX
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Available: {modalMode === "stake" ? availableBalance : selectedPool?.myStake}
+                  Available: {availableBalance}
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-muted/30 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Lock Period</span>
-                  <span>{selectedPool?.lockPeriod}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">APY</span>
-                  <span className="text-capx-success">{selectedPool?.apy}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Min Stake</span>
-                  <span>{selectedPool?.minStake}</span>
-                </div>
-              </div>
-
-              {modalMode === "stake" && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                  <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <p className="text-xs text-muted-foreground">
-                    Staked tokens will be locked for {selectedPool?.lockPeriod}. Early unstaking may incur penalties.
-                  </p>
-                </div>
-              )}
-
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 onClick={handleTransaction}
                 disabled={!amount || txStatus === "pending"}
               >
                 {txStatus === "pending" ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Confirming...
+                    Processing...
                   </>
+                ) : modalMode === "stake" ? (
+                  "Stake CAPX"
                 ) : (
-                  `${modalMode === "stake" ? "Stake" : "Unstake"} CAPX`
+                  "Unstake CAPX"
                 )}
               </Button>
             </div>
           ) : txStatus === "success" ? (
             <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-capx-success/10 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8 text-capx-success" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Transaction Successful!</h3>
+                <h3 className="font-semibold text-lg">Transaction Successful!</h3>
                 <p className="text-sm text-muted-foreground">
-                  You have {modalMode === "stake" ? "staked" : "unstaked"} {amount} CAPX
+                  {modalMode === "stake"
+                    ? `You've staked ${amount} CAPX`
+                    : `You've unstaked ${amount} CAPX`}
                 </p>
               </div>
-              <Button onClick={resetModal} className="w-full">Done</Button>
+              <Button onClick={resetModal} className="w-full">
+                Close
+              </Button>
             </div>
           ) : (
             <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-capx-error/10 flex items-center justify-center mx-auto">
-                <XCircle className="w-8 h-8 text-capx-error" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+                <XCircle className="w-8 h-8 text-destructive" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Transaction Failed</h3>
+                <h3 className="font-semibold text-lg">Transaction Failed</h3>
                 <p className="text-sm text-muted-foreground">
                   Something went wrong. Please try again.
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={resetModal} className="flex-1">Cancel</Button>
-                <Button onClick={() => setTxStatus("idle")} className="flex-1">Try Again</Button>
+                <Button variant="outline" onClick={resetModal} className="flex-1">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => setTxStatus("idle")}
+                  className="flex-1"
+                >
+                  Try Again
+                </Button>
               </div>
             </div>
           )}

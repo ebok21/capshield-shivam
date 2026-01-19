@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Search,
   Download,
+  Vote,
 } from "lucide-react";
 import { useWalletState } from "@/hooks/useWalletState";
 import { SkeletonList } from "@/components/ui/skeleton-card";
@@ -24,7 +25,7 @@ import { ConnectWalletPrompt, EmptyState } from "@/components/ui/connect-wallet-
 
 interface Transaction {
   id: string;
-  type: "stake" | "unstake" | "claim" | "vest" | "transfer" | "swap";
+  type: "stake" | "unstake" | "claim" | "vest" | "transfer" | "vote";
   description: string;
   amount: string;
   amountUsd?: string;
@@ -37,7 +38,7 @@ const transactions: Transaction[] = [
   {
     id: "1",
     type: "stake",
-    description: "Staked to Crypto Pool",
+    description: "Staked CAPX (30 day lock)",
     amount: "-1,000 CAPX",
     amountUsd: "$400",
     status: "completed",
@@ -57,7 +58,7 @@ const transactions: Transaction[] = [
   {
     id: "3",
     type: "vest",
-    description: "Vesting release",
+    description: "Vesting release - Deal #1234",
     amount: "+200 CAPX",
     amountUsd: "$80",
     status: "completed",
@@ -67,7 +68,7 @@ const transactions: Transaction[] = [
   {
     id: "4",
     type: "transfer",
-    description: "Transfer to wallet",
+    description: "Transfer to external wallet",
     amount: "-500 CAPX",
     amountUsd: "$200",
     status: "completed",
@@ -77,7 +78,7 @@ const transactions: Transaction[] = [
   {
     id: "5",
     type: "unstake",
-    description: "Unstaked from Markets Pool",
+    description: "Unstaked CAPX (flexible)",
     amount: "+2,000 CAPX",
     amountUsd: "$800",
     status: "completed",
@@ -86,18 +87,17 @@ const transactions: Transaction[] = [
   },
   {
     id: "6",
-    type: "stake",
-    description: "Staked to Innovation Pool",
-    amount: "-500 CAPX",
-    amountUsd: "$200",
-    status: "pending",
-    timestamp: "3 days ago",
+    type: "vote",
+    description: "Voted on CAP-12 proposal",
+    amount: "—",
+    status: "completed",
+    timestamp: "4 days ago",
     txHash: "0xlmno...yzab",
   },
   {
     id: "7",
-    type: "swap",
-    description: "Swapped ETH for CAPX",
+    type: "claim",
+    description: "Claimed vesting tokens",
     amount: "+1,500 CAPX",
     amountUsd: "$600",
     status: "completed",
@@ -115,25 +115,35 @@ const getTypeIcon = (type: Transaction["type"]) => {
     case "claim":
     case "vest":
       return <ArrowDownLeft className="w-4 h-4" />;
-    case "swap":
-      return <ArrowLeftRight className="w-4 h-4" />;
+    case "vote":
+      return <Vote className="w-4 h-4" />;
     default:
       return <ArrowLeftRight className="w-4 h-4" />;
   }
 };
 
 const getTypeBadge = (type: Transaction["type"]) => {
+  const labels: Record<Transaction["type"], string> = {
+    stake: "Stake",
+    unstake: "Unstake",
+    claim: "Claim",
+    vest: "Vesting",
+    transfer: "Transfer",
+    vote: "Vote",
+  };
+
   const colors: Record<Transaction["type"], string> = {
-    stake: "bg-capx-purple/10 text-capx-purple",
-    unstake: "bg-capx-warning/10 text-capx-warning",
-    claim: "bg-capx-success/10 text-capx-success",
+    stake: "bg-primary/10 text-primary",
+    unstake: "bg-muted text-muted-foreground",
+    claim: "bg-primary/10 text-primary",
     vest: "bg-primary/10 text-primary",
     transfer: "bg-muted text-muted-foreground",
-    swap: "bg-capx-cyan/10 text-capx-cyan",
+    vote: "bg-accent/10 text-accent",
   };
+
   return (
     <Badge variant="secondary" className={colors[type]}>
-      {type.charAt(0).toUpperCase() + type.slice(1)}
+      {labels[type]}
     </Badge>
   );
 };
@@ -141,11 +151,23 @@ const getTypeBadge = (type: Transaction["type"]) => {
 const getStatusBadge = (status: Transaction["status"]) => {
   switch (status) {
     case "completed":
-      return <Badge variant="secondary" className="bg-capx-success/10 text-capx-success">Completed</Badge>;
+      return (
+        <Badge variant="secondary" className="bg-primary/10 text-primary">
+          Completed
+        </Badge>
+      );
     case "pending":
-      return <Badge variant="secondary" className="bg-capx-warning/10 text-capx-warning">Pending</Badge>;
+      return (
+        <Badge variant="secondary" className="bg-muted text-muted-foreground">
+          Pending
+        </Badge>
+      );
     case "failed":
-      return <Badge variant="secondary" className="bg-capx-error/10 text-capx-error">Failed</Badge>;
+      return (
+        <Badge variant="secondary" className="bg-destructive/10 text-destructive">
+          Failed
+        </Badge>
+      );
   }
 };
 
@@ -155,10 +177,10 @@ export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [periodFilter, setPeriodFilter] = useState("7d");
+  const [periodFilter, setPeriodFilter] = useState("30d");
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
+    const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
@@ -175,7 +197,7 @@ export default function Transactions() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Transactions</h1>
-            <p className="text-muted-foreground">View your complete transaction history</p>
+            <p className="text-muted-foreground">View your transaction history</p>
           </div>
         </div>
         <SkeletonList rows={7} />
@@ -202,7 +224,7 @@ export default function Transactions() {
       </div>
 
       {!isConnected ? (
-        <ConnectWalletPrompt 
+        <ConnectWalletPrompt
           title="Connect wallet to view transactions"
           description="Connect your wallet to see your complete transaction history"
         />
@@ -214,8 +236,8 @@ export default function Transactions() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search transactions..." 
+                  <Input
+                    placeholder="Search transactions..."
                     className="pl-9"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -232,7 +254,7 @@ export default function Transactions() {
                     <SelectItem value="claim">Claim</SelectItem>
                     <SelectItem value="vest">Vesting</SelectItem>
                     <SelectItem value="transfer">Transfer</SelectItem>
-                    <SelectItem value="swap">Swap</SelectItem>
+                    <SelectItem value="vote">Vote</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -263,10 +285,10 @@ export default function Transactions() {
 
           {/* Transactions List */}
           {filteredTransactions.length === 0 ? (
-            <EmptyState 
+            <EmptyState
               icon={<ArrowLeftRight className="w-6 h-6" />}
               title="No transactions found"
-              description="No transactions match your current filters. Try adjusting your search criteria."
+              description="No transactions match your current filters."
             />
           ) : (
             <Card>
@@ -284,8 +306,10 @@ export default function Transactions() {
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center ${
                             tx.amount.startsWith("+")
-                              ? "bg-capx-success/10 text-capx-success"
-                              : "bg-capx-error/10 text-capx-error"
+                              ? "bg-primary/10 text-primary"
+                              : tx.amount === "—"
+                              ? "bg-accent/10 text-accent"
+                              : "bg-muted text-muted-foreground"
                           }`}
                         >
                           {getTypeIcon(tx.type)}
@@ -299,8 +323,17 @@ export default function Transactions() {
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>{tx.timestamp}</span>
                             <span>•</span>
-                            <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
-                              <a href={`https://etherscan.io/tx/${tx.txHash}`} target="_blank" rel="noopener noreferrer">
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs"
+                              asChild
+                            >
+                              <a
+                                href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
                                 {tx.txHash}
                                 <ExternalLink className="w-3 h-3 ml-1" />
                               </a>
@@ -311,7 +344,11 @@ export default function Transactions() {
                       <div className="text-right">
                         <p
                           className={`font-bold ${
-                            tx.amount.startsWith("+") ? "text-capx-success" : "text-capx-error"
+                            tx.amount.startsWith("+")
+                              ? "text-primary"
+                              : tx.amount === "—"
+                              ? "text-muted-foreground"
+                              : "text-foreground"
                           }`}
                         >
                           {tx.amount}
