@@ -13,10 +13,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index";
 import Stake from "./pages/Stake";
 import Vesting from "./pages/Vesting";
-import Treasury from "./pages/Treasury";
-import ActivityRewards from "./pages/activity/Rewards";
-import ActivityTransactions from "./pages/activity/Transactions";
-import ActivityAnalytics from "./pages/activity/Analytics";
+import Transactions from "./pages/Transactions";
+import Protocol from "./pages/Protocol";
+import Governance from "./pages/Governance";
+import Documents from "./pages/Documents";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -33,17 +33,12 @@ const App = () => (
             <DashboardLayout>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/stake" element={<Stake />} />
                 <Route path="/vesting" element={<Vesting />} />
-                <Route path="/treasury" element={<Treasury />} />
-                <Route path="/portfolio" element={<PlaceholderPage />} />
-                {/* Activity section */}
-                <Route path="/activity/rewards" element={<ActivityRewards />} />
-                <Route path="/activity/transactions" element={<ActivityTransactions />} />
-                <Route path="/activity/analytics" element={<ActivityAnalytics />} />
-                {/* Other sections */}
-                <Route path="/governance" element={<PlaceholderPage />} />
-                <Route path="/documents" element={<PlaceholderPage />} />
+                <Route path="/stake" element={<Stake />} />
+                <Route path="/transactions" element={<Transactions />} />
+                <Route path="/protocol" element={<Protocol />} />
+                <Route path="/governance" element={<Governance />} />
+                <Route path="/documents" element={<Documents />} />
                 <Route path="/settings" element={<PlaceholderPage />} />
                 <Route path="/help" element={<PlaceholderPage />} />
                 <Route path="*" element={<NotFound />} />
